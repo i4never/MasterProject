@@ -1,7 +1,12 @@
 .DS_Store
 .ipynb_checkpoints/
 *__pycache__*
+
 data/
+config/
+images/
+Note.ipynb
+
 *.yaml
 *.idea/
 *.png

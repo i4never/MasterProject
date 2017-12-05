@@ -1,35 +1,9 @@
 import tensorflow as tf
 import keras.backend as K
-from keras.layers import Dense, Input, merge
+from keras.layers import Dense, Input, add
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.utils.vis_utils import plot_model
-
-# This need to be verified according to experiment
-an_config = {
-    "state_size": 10,
-    "action_size": 3,
-    "batch_size": 100,
-    "learning_rate": 0.0001,
-    "tau": 0.01,
-
-    "hidden_layer": 2,
-    "h0": 128,
-    "h1": 128
-}
-
-cn_config = {
-    "state_size": 10,
-    "action_size": 3,
-    "batch_size": 100,
-    "learning_rate": 0.0001,
-    "tau": 0.01,
-
-    "hidden_layer": 3,
-    "h0": 128,
-    "h1": 128,
-    "h2": 128
-}
 
 
 class ActorNetwork(object):
@@ -58,7 +32,7 @@ class ActorNetwork(object):
         h0 = Dense(self.config["h0"], activation='relu', name="Hidden_Layer0")(State)
         h1 = Dense(self.config["h1"], activation='relu', name="Hidden_Layer1")(h0)
         Action = Dense(self.config["action_size"], activation="softmax", name="Action_Output")(h1)
-        model = Model(input=State, output=Action)
+        model = Model(inputs=State, outputs=Action)
         return model, model.trainable_weights, State
 
     def train(self, states, action_grads):
@@ -74,10 +48,10 @@ class ActorNetwork(object):
             actor_target_weights[i] = self.TAU * actor_weights[i] + (1 - self.TAU) * actor_target_weights[i]
         self.target_model.set_weights(actor_target_weights)
 
-    def describe(self):
+    def describe(self, file="actor_network.png"):
         print("ActorNetwork:")
         self.model.summary()
-        plot_model(self.model, "actor_network.png", show_shapes=True, show_layer_names=True)
+        plot_model(self.model, file, show_shapes=True, show_layer_names=True)
 
 
 class CriticNetwork(object):
@@ -107,11 +81,11 @@ class CriticNetwork(object):
         ha1 = Dense(self.config["h0"], activation='linear', name="Action_Hidden_Layer")(Action)
 
         h1 = Dense(self.config["h1"], activation='linear', name="Hidden_Layer0")(hs1)
-        h2 = merge([h1, ha1], mode='sum', name="Hidden_Layer1")
+        h2 = add([h1, ha1], name="Hidden_Layer1")
         h3 = Dense(self.config['h2'], activation='relu', name="Hidden_Layer2")(h2)
         Q = Dense(self.config["action_size"], activation="linear", name="Q_Value")(h3)
 
-        model = Model(input=[State, Action], output=Q)
+        model = Model(inputs=[State, Action], outputs=Q)
         adam = Adam(lr=self.config["learning_rate"])
         model.compile(loss='mse', optimizer=adam)
         return model, Action, State
@@ -129,7 +103,7 @@ class CriticNetwork(object):
             critic_target_weights[i] = self.TAU * critic_weights[i] + (1 - self.TAU) * critic_target_weights[i]
         self.target_model.set_weights(critic_target_weights)
 
-    def describe(self):
+    def describe(self, file="critic_network.png"):
         print("CriticNetwork:")
         self.model.summary()
-        plot_model(self.model, "critic_network.png", show_shapes=True, show_layer_names=True)
+        plot_model(self.model, file, show_shapes=True, show_layer_names=True)
