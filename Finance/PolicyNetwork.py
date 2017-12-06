@@ -1,5 +1,6 @@
 import tensorflow as tf
 import keras.backend as K
+import numpy as np
 from keras.layers import Dense, Input, add
 from keras.models import Model
 from keras.optimizers import Adam
@@ -31,7 +32,7 @@ class ActorNetwork(object):
         State = Input(shape=[self.config["state_size"]], name="State_Input")
         h0 = Dense(self.config["h0"], activation='relu', name="Hidden_Layer0")(State)
         h1 = Dense(self.config["h1"], activation='relu', name="Hidden_Layer1")(h0)
-        Action = Dense(self.config["action_size"], activation="softmax", name="Action_Output")(h1)
+        Action = Dense(self.config["action_size"], activation="sigmoid", name="Action_Output")(h1)
         model = Model(inputs=State, outputs=Action)
         return model, model.trainable_weights, State
 
@@ -107,3 +108,20 @@ class CriticNetwork(object):
         print("CriticNetwork:")
         self.model.summary()
         plot_model(self.model, file, show_shapes=True, show_layer_names=True)
+
+
+class Agent(object):
+    def __init__(self, actor, critic):
+        self.actor = actor
+        self.critic = critic
+        self.hold = -1
+
+    def generateAction(self, state, epsilon):
+        if np.random.rand() > epsilon:
+            action = self.actor.model.predict(state.reshape(1, 50))
+        else:
+            action = np.random.randint(2)
+        if action not in [0, 1]:
+            print("Invalid action: " + str(action))
+            exit(-1)
+        return action

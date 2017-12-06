@@ -46,15 +46,20 @@ class Env(object):
         # t-240*10, t-240*3, t-240, t-300, t-180, t-45:t
         self.obs.clear()
         for i in range(240 * 10, self.data.size):
-
-            r = np.array([self.data[i - 240 * 10], self.data[i - 240 * 3], self.data[i - 240], self.data[i - 300],
-                          self.data[i - 180]])
+            r = [self.data[i - 240 * 10], self.data[i - 240 * 3], self.data[i - 240], self.data[i - 300],
+                 self.data[i - 180]]
             for j in range(45, 0, -1):
-                r = np.append(r, self.data[i - j])
-            self.obs.append(r)
+                r.append(self.data[i - j])
+            self.obs.append(np.array(r))
 
+    # action: 1 = unchange, 0 = change
+    # hold: 1 = hold, -1 = unhold
     def act(self, action, hold):
         # Return new_state, reward, is_done
+
+        # Because both the return of sigmod and np.rand.ranint is 0/1
+        # Should be encoded into -1/1
+        action = -1 if action == 0 else action
         if self.pt > len(self.obs):
             self.is_done = True
             return self.obs[-1], hold * (self.data[-1] - self.data[-2]), self.is_done
