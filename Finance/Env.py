@@ -54,7 +54,7 @@ class Env(object):
 
     # action: 1 = unchange, 0 = change
     # hold: 1 = hold, -1 = unhold
-    def act(self, action, hold):
+    def step(self, action, hold):
         # Return new_state, reward, is_done
 
         # Because both the return of sigmod and np.rand.ranint is 0/1

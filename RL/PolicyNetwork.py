@@ -46,7 +46,7 @@ class ActorNetwork(object):
         actor_weights = self.model.get_weights()
         actor_target_weights = self.target_model.get_weights()
         for i in range(len(actor_weights)):
-            actor_target_weights[i] = self.TAU * actor_weights[i] + (1 - self.TAU) * actor_target_weights[i]
+            actor_target_weights[i] = self.tau * actor_weights[i] + (1 - self.tau) * actor_target_weights[i]
         self.target_model.set_weights(actor_target_weights)
 
     def describe(self, file="actor_network.png"):
@@ -101,7 +101,7 @@ class CriticNetwork(object):
         critic_weights = self.model.get_weights()
         critic_target_weights = self.target_model.get_weights()
         for i in range(len(critic_weights)):
-            critic_target_weights[i] = self.TAU * critic_weights[i] + (1 - self.TAU) * critic_target_weights[i]
+            critic_target_weights[i] = self.tau * critic_weights[i] + (1 - self.tau) * critic_target_weights[i]
         self.target_model.set_weights(critic_target_weights)
 
     def describe(self, file="critic_network.png"):
@@ -118,10 +118,12 @@ class Agent(object):
 
     def generateAction(self, state, epsilon):
         if np.random.rand() > epsilon:
-            action = self.actor.model.predict(state.reshape(1, 50))
+            action = self.actor.model.predict(state.reshape(1, self.actor.config["state_size"]))
         else:
             action = np.random.randint(2)
+            
         if action not in [0, 1]:
             print("Invalid action: " + str(action))
             exit(-1)
+        action = -1 if action == 0 else action
         return action
