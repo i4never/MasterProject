@@ -28,13 +28,15 @@ class Loader(object):
 
 
 class Env(object):
-    def __init__(self, series):
+    def __init__(self, series, action_dim, observation_dim):
         # series:       #   #   ... #   #   #   #   #   #  ...
         # obs/state:   (240*10)    [f] [f] [f] [f] [f] [f] ...
         # pt:                       0   1   2   3   4   5  ...
         # rw:
 
         self.data = series
+        self.action_dim = action_dim
+        self.observation_dim = observation_dim
         self.obs = []
         self.__DDRLFFSR__()
         self.pt = 0
@@ -52,21 +54,16 @@ class Env(object):
                 r.append(self.data[i - j])
             self.obs.append(np.array(r))
 
-    # action: 1 = unchange, 0 = change
-    # hold: 1 = hold, -1 = unhold
-    def step(self, action, hold):
+    # action: 0=short 1=neutral 2=long (for convenience, action-1)
+    def step(self, action):
         # Return new_state, reward, is_done
 
-        # Because both the return of sigmod and np.rand.ranint is 0/1
-        # Should be encoded into -1/1
-        action = -1 if action == 0 else action
-        if self.pt > len(self.obs):
+        if self.pt >= len(self.obs)-1:
             self.is_done = True
-            return self.obs[-1], hold * (self.data[-1] - self.data[-2]), self.is_done
+            return self.obs[-1], (action-1) * (self.data[-1] - self.data[-2]), self.is_done
 
         self.pt += 1
-
-        return self.obs[self.pt], hold * action * (
+        return self.obs[self.pt], (action-1) * (
             self.data[self.pt + 240 * 10] - self.data[self.pt + 240 * 10 - 1]), self.is_done
 
     def reset(self):

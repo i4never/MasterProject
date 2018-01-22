@@ -61,7 +61,7 @@ epsilon = 1.
 state_size = model_config["state_size"]
 action_size = model_config["action_size"]
 
-env = Env(data[407760:].close.values)
+env = Env(data[407760:].close.values, model_config['action_dim'], model_config['state_dim'])
 buffer = ReplayBuffer(BUFFER_SIZE)
 
 for i in range(EPISODE):
