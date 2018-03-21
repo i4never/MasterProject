@@ -14,6 +14,8 @@ class Actor:
         self.action = tf.placeholder(tf.int32, None, "act")
         self.td_error = tf.placeholder(tf.float32, None, "td_error")
 
+        self.saver = None
+
         with tf.variable_scope("Actor"):
             layer1 = tf.layers.dense(
                 inputs=self.obs,
@@ -100,6 +102,8 @@ class Critic:
             with tf.variable_scope("train"):
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
+            self.saver = None
+
     def learn(self, state, reward, state_):
         state, state_ = state[np.newaxis, :], state_[np.newaxis, :]
 
@@ -123,6 +127,8 @@ actor = Actor(sess, env.action_space.n, env.observation_space.shape[0], 0.001)
 critic = Critic(sess, env.observation_space.shape[0], 0.001, 0.99)
 
 sess.run(tf.global_variables_initializer())
+actor.saver = tf.train.Saver(max_to_keep=1)
+critic.saver = tf.train.Saver(max_to_keep=1)
 
 for i_episode in range(1000):
     s = env.reset()
@@ -148,4 +154,6 @@ for i_episode in range(1000):
         if done or t>=10000:
             ep_rs_sum = sum(track_r)
             print("episode:", i_episode, " reward", int(ep_rs_sum))
+            actor.saver.save(sess, "./", global_step=i_episode)
+            critic.saver.save(sess, "./", global_step=i_episode)
             break

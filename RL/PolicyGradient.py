@@ -27,6 +27,7 @@ class PolicyGradient:
             self.file_writer = tf.summary.FileWriter(log_path, self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver(max_to_keep=2)
 
     def _build_net(self):
         with tf.name_scope("Inputs"):
@@ -120,6 +121,7 @@ class PolicyGradient:
         self.ep_rewards.clear()
         return
 
+
 ##############################
 # Test script, opengym, cartpole
 import gym
@@ -144,7 +146,7 @@ RL = PolicyGradient(
     log_path="/Users/FC/Documents/MasterProject/log"
 )
 
-for i_episode in range(3000):
+for i_episode in range(300):
 
     observation = env.reset()
 
@@ -168,8 +170,33 @@ for i_episode in range(3000):
             # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 判断是否显示模拟
             print("episode:", i_episode, "  reward:", int(running_reward))
 
+            RL.saver.save(RL.sess, './pg_model', global_step=i_episode + 1)
+
             vt = RL.learn()  # 学习, 输出 vt
 
             break
 
         observation = observation_
+
+model_file = tf.train.latest_checkpoint('./')
+tester = PolicyGradient(
+    action_dim=env.action_space.n,
+    feature_dim=env.observation_space.shape[0],
+    learning_rate=0.01,
+    reward_decay=0.99,
+    log_path="/Users/FC/Documents/MasterProject/log"
+)
+
+tester.saver.restore(tester.sess, tf.train.latest_checkpoint('./'))
+
+obs = env.reset()
+step = 0
+while True:
+    env.render()
+    action = tester.choose_action(obs)
+    obs, reward, done, info = env.step(action)
+    step += 1
+    if done:
+        break
+
+
