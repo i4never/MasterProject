@@ -44,7 +44,7 @@ class PolicyGradient:
             name="layer1"
         )
 
-        # layer1
+        # layer2
         layer2 = tf.layers.dense(
             inputs=layer1,
             units=32,
@@ -54,7 +54,7 @@ class PolicyGradient:
             name="layer2"
         )
 
-        # layer2
+        # layer3
         layer3 = tf.layers.dense(
             inputs=layer2,
             units=self.action_dim,  # 输出个数
@@ -168,7 +168,7 @@ for i_episode in range(3000):
             # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 判断是否显示模拟
             print("episode:", i_episode, "  reward:", int(running_reward))
 
-            vt = RL.learn()  # 学习, 输出 vt, 我们下节课讲这个 vt 的作用
+            vt = RL.learn()  # 学习, 输出 vt
 
             break
 
