@@ -6,6 +6,7 @@ from Finance.Env import Loader, Env
 from Finance.ReplayBuffer import ReplayBuffer
 from RL.PolicyGradient import PolicyGradient as Agent
 
+print("PG TRADER")
 sys.path.append("./")
 
 # Load env config
@@ -15,11 +16,15 @@ model_config = yaml.load(open("config/model.yaml"))
 loader = Loader("data/")
 data, info = loader.load("000300")
 # data_DDRLFFSR is start from 2014.1.1, the 407760th point in data
-data_DDRLFFSR = data[407760:407760 + 20000]
+data_DDRLFFSR = data[407760:407760 + 20000].close.values
+
+# Normalize data
+data_DDRLFFSR -= np.mean(data_DDRLFFSR)
+data_DDRLFFSR /= np.std(data_DDRLFFSR)
 
 # Use first 15000 point to train model
-train = data_DDRLFFSR[:15000].close.values
-test = data_DDRLFFSR[15000:].close.values
+train = data_DDRLFFSR[:15000]
+test = data_DDRLFFSR[15000:]
 
 env_train = Env(train, action_dim=model_config['action_dim'], observation_dim=model_config['state_dim'])
 env_test = Env(test, action_dim=model_config['action_dim'], observation_dim=model_config['state_dim'])
@@ -30,6 +35,7 @@ agent = Agent(
     feature_dim=env.observation_dim,
     learning_rate=0.001,
     reward_decay=0.99,
+    max_to_keep=100,
     log_path="./log"
 )
 
@@ -74,3 +80,4 @@ for i_episode in range(EPISODE):
             _, reward, done = env_test.step(action)
             ep_rs_sum += reward
         print("test after episode:", i_episode, " reward:", ep_rs_sum)
+        agent.saver.save(agent.sess, './pg_model', global_step=i_episode + 1)

@@ -3,7 +3,7 @@ import numpy as np
 
 
 class PolicyGradient:
-    def __init__(self, action_dim, feature_dim, learning_rate, reward_decay, log_path=None):
+    def __init__(self, action_dim, feature_dim, learning_rate, reward_decay, max_to_keep = 1, log_path=None):
         self.action_dim = action_dim
         self.feature_dim = feature_dim
         self.lr = learning_rate
@@ -27,13 +27,16 @@ class PolicyGradient:
             self.file_writer = tf.summary.FileWriter(log_path, self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer())
-        self.saver = tf.train.Saver(max_to_keep=2)
+        self.saver = tf.train.Saver(max_to_keep=max_to_keep)
 
     def _build_net(self):
         with tf.name_scope("Inputs"):
             self.tf_obs = tf.placeholder(tf.float32, [None, self.feature_dim], name="observations")
             self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions")
             self.tf_vt = tf.placeholder(tf.float32, [None, ], name="actions_value")
+
+        # RNN part
+
 
         # layer1
         layer1 = tf.layers.dense(
@@ -124,79 +127,77 @@ class PolicyGradient:
 
 ##############################
 # Test script, opengym, cartpole
-import gym
-
-RENDER = False  # 在屏幕上显示模拟窗口会拖慢运行速度, 我们等计算机学得差不多了再显示模拟
-DISPLAY_REWARD_THRESHOLD = 400  # 当 回合总 reward 大于 400 时显示模拟窗口
-
-env = gym.make('CartPole-v0')  # CartPole 这个模拟
-env = env.unwrapped  # 取消限制
-env.seed(1)  # 普通的 Policy gradient 方法, 使得回合的 variance 比较大, 所以我们选了一个好点的随机种子
-
-print(env.action_space)  # 显示可用 action
-print(env.observation_space)  # 显示可用 state 的 observation
-print(env.observation_space.high)  # 显示 observation 最高值
-print(env.observation_space.low)  # 显示 observation 最低值
-
-RL = PolicyGradient(
-    action_dim=env.action_space.n,
-    feature_dim=env.observation_space.shape[0],
-    learning_rate=0.01,
-    reward_decay=0.99,
-    log_path="/Users/FC/Documents/MasterProject/log"
-)
-
-for i_episode in range(300):
-
-    observation = env.reset()
-
-    while True:
-        if RENDER:
-            env.render()
-
-        action = RL.choose_action(observation)
-
-        observation_, reward, done, info = env.step(action)
-
-        RL.store_transition(observation, action, reward)  # 存储这一回合的 transition
-
-        if done:
-            ep_rs_sum = sum(RL.ep_rewards)
-
-            if 'running_reward' not in globals():
-                running_reward = ep_rs_sum
-            else:
-                running_reward = running_reward * 0.99 + ep_rs_sum * 0.01
-            # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 判断是否显示模拟
-            print("episode:", i_episode, "  reward:", int(running_reward))
-
-            RL.saver.save(RL.sess, './pg_model', global_step=i_episode + 1)
-
-            vt = RL.learn()  # 学习, 输出 vt
-
-            break
-
-        observation = observation_
-
-model_file = tf.train.latest_checkpoint('./')
-tester = PolicyGradient(
-    action_dim=env.action_space.n,
-    feature_dim=env.observation_space.shape[0],
-    learning_rate=0.01,
-    reward_decay=0.99,
-    log_path="/Users/FC/Documents/MasterProject/log"
-)
-
-tester.saver.restore(tester.sess, tf.train.latest_checkpoint('./'))
-
-obs = env.reset()
-step = 0
-while True:
-    env.render()
-    action = tester.choose_action(obs)
-    obs, reward, done, info = env.step(action)
-    step += 1
-    if done:
-        break
-
-
+# import gym
+#
+# RENDER = False  # 在屏幕上显示模拟窗口会拖慢运行速度, 我们等计算机学得差不多了再显示模拟
+# DISPLAY_REWARD_THRESHOLD = 400  # 当 回合总 reward 大于 400 时显示模拟窗口
+#
+# env = gym.make('CartPole-v0')  # CartPole 这个模拟
+# env = env.unwrapped  # 取消限制
+# env.seed(1)  # 普通的 Policy gradient 方法, 使得回合的 variance 比较大, 所以我们选了一个好点的随机种子
+#
+# print(env.action_space)  # 显示可用 action
+# print(env.observation_space)  # 显示可用 state 的 observation
+# print(env.observation_space.high)  # 显示 observation 最高值
+# print(env.observation_space.low)  # 显示 observation 最低值
+#
+# RL = PolicyGradient(
+#     action_dim=env.action_space.n,
+#     feature_dim=env.observation_space.shape[0],
+#     learning_rate=0.01,
+#     reward_decay=0.99,
+#     log_path="/Users/FC/Documents/MasterProject/log"
+# )
+#
+# for i_episode in range(300):
+#
+#     observation = env.reset()
+#
+#     while True:
+#         if RENDER:
+#             env.render()
+#
+#         action = RL.choose_action(observation)
+#
+#         observation_, reward, done, info = env.step(action)
+#
+#         RL.store_transition(observation, action, reward)  # 存储这一回合的 transition
+#
+#         if done:
+#             ep_rs_sum = sum(RL.ep_rewards)
+#
+#             if 'running_reward' not in globals():
+#                 running_reward = ep_rs_sum
+#             else:
+#                 running_reward = running_reward * 0.99 + ep_rs_sum * 0.01
+#             # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 判断是否显示模拟
+#             print("episode:", i_episode, "  reward:", int(running_reward))
+#
+#             RL.saver.save(RL.sess, './pg_model', global_step=i_episode + 1)
+#
+#             vt = RL.learn()  # 学习, 输出 vt
+#
+#             break
+#
+#         observation = observation_
+#
+# model_file = tf.train.latest_checkpoint('./')
+# tester = PolicyGradient(
+#     action_dim=env.action_space.n,
+#     feature_dim=env.observation_space.shape[0],
+#     learning_rate=0.01,
+#     reward_decay=0.99,
+#     log_path="/Users/FC/Documents/MasterProject/log"
+# )
+#
+# tester.saver.restore(tester.sess, tf.train.latest_checkpoint('./'))
+#
+# obs = env.reset()
+# step = 0
+# while True:
+#     env.render()
+#     action = tester.choose_action(obs)
+#     obs, reward, done, info = env.step(action)
+#     step += 1
+#     if done:
+#         break
